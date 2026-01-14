@@ -1,0 +1,204 @@
+<div id="museum-wrapper" style="font-family: 'Segoe UI', sans-serif; background-color: #1a1a1a; color: white; position: relative; width: 100%; max-width: 900px; margin: 0 auto; border-radius: 12px; overflow: hidden; min-height: 600px;">
+    
+    <style>
+        /* CSS ειδικά για το πλαίσιο του μουσείου */
+        #museum-wrapper h1 { margin-bottom: 10px; text-shadow: 0 0 10px #00d2ff; color: #00d2ff; text-align: center; }
+        #museum-wrapper p.subtitle { margin-bottom: 20px; color: #aaa; text-align: center; }
+
+        /* Οθόνη Καλωσορίσματος */
+        #welcome-screen {
+            position: absolute; /* Αλλαγή από fixed για να μένει στο κουτί */
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            text-align: center;
+        }
+        
+        #enter-btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            background-color: #00d2ff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #000;
+            font-weight: bold;
+            transition: 0.3s;
+            box-shadow: 0 0 20px #00d2ff;
+            margin-top: 20px;
+        }
+        #enter-btn:hover { transform: scale(1.1); background-color: white; }
+
+        /* Το Κύριο Πλαίσιο */
+        .museum-bg {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background-image: url('https://images.unsplash.com/photo-1562408590-e32931084e23?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80');
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #444;
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            display: none; 
+        }
+
+        /* Hotspots */
+        .hotspot {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #00d2ff 0%, #00507a 100%);
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: white;
+            box-shadow: 0 0 15px #00d2ff;
+            transition: all 0.3s;
+            animation: pulse 2s infinite;
+            z-index: 10;
+        }
+        .hotspot:hover { transform: scale(1.2); background: white; color: #00d2ff; }
+
+        /* Θέσεις (ποσοστά για responsive) */
+        #spot1 { top: 65%; left: 15%; }
+        #spot2 { top: 40%; left: 35%; }
+        #spot3 { top: 55%; left: 65%; }
+        #spot4 { top: 30%; left: 80%; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 210, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); }
+        }
+
+        /* Modal */
+        .custom-modal {
+            display: none;
+            position: absolute; /* Αλλαγή σε absolute */
+            z-index: 50;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: #222;
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid #555;
+            position: relative;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+
+        .close-btn {
+            position: absolute; top: 10px; right: 20px;
+            font-size: 30px; cursor: pointer; color: #aaa;
+            z-index: 60;
+        }
+        .close-btn:hover { color: #00d2ff; }
+
+        .modal-content iframe { width: 100%; height: 250px; border-radius: 8px; border: none; }
+        .description { margin-top: 15px; font-size: 15px; line-height: 1.5; color: #ddd; text-align: left;}
+        
+        .audio-control { margin: 10px; cursor: pointer; font-size: 14px; color: #888; text-align: center; }
+    </style>
+
+    <audio id="museumAudio" loop>
+        <source src="https://upload.wikimedia.org/wikipedia/commons/3/34/Satie_Gymnopedie_No_1.ogg" type="audio/ogg">
+    </audio>
+
+    <div id="welcome-screen">
+        <h1 style="font-size: 2.5em;">⚡ Αίθουσα Ηλεκτροστατικής</h1>
+        <p>Νόμος του Coulomb & Ηλεκτρικά Φορτία</p>
+        <button id="enter-btn" onclick="enterMuseum()">ΕΙΣΟΔΟΣ</button>
+    </div>
+
+    <div style="padding: 20px;">
+        <h1>⚡ Εργαστήριο Φυσικής</h1>
+        <p class="subtitle">Επιλέξτε ένα σημείο (1-4) για πείραμα</p>
+
+        <div class="museum-bg" id="museum-box">
+            <div class="hotspot" id="spot1" onclick="openModal(1)">1</div>
+            <div class="hotspot" id="spot2" onclick="openModal(2)">2</div>
+            <div class="hotspot" id="spot3" onclick="openModal(3)">3</div>
+            <div class="hotspot" id="spot4" onclick="openModal(4)">4</div>
+        </div>
+        
+        <div class="audio-control" onclick="toggleAudio()">🔊 Παύση/Έναρξη Μουσικής</div>
+    </div>
+
+    <div id="modal1" class="custom-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal(1)">&times;</span>
+            <h2>🎈 Ομώνυμα & Ετερώνυμα</h2>
+            <iframe src="https://www.youtube.com/embed/AcxK95V1lKw" allowfullscreen></iframe>
+            <div class="description"><strong>Η Βάση του Coulomb:</strong> Τα ίδια φορτία απωθούνται, τα αντίθετα έλκονται.</div>
+        </div>
+    </div>
+
+    <div id="modal2" class="custom-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal(2)">&times;</span>
+            <h2>⚖️ Το Ηλεκτροσκόπιο</h2>
+            <iframe src="https://www.youtube.com/embed/2_a_c2-Mvvw" allowfullscreen></iframe>
+            <div class="description"><strong>Ανίχνευση:</strong> Τα φύλλα χρυσού ανοίγουν λόγω της απωστικής δύναμης Coulomb.</div>
+        </div>
+    </div>
+
+    <div id="modal3" class="custom-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal(3)">&times;</span>
+            <h2>💧 Η Κάμψη του Νερού</h2>
+            <iframe src="https://www.youtube.com/embed/VhWQ-r1LYXY" allowfullscreen></iframe>
+            <div class="description"><strong>Έλξη:</strong> Το φορτισμένο σώμα έλκει τα μόρια του νερού, νικώντας τη βαρύτητα.</div>
+        </div>
+    </div>
+
+    <div id="modal4" class="custom-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal(4)">&times;</span>
+            <h2>🧮 Ο Νόμος του Coulomb</h2>
+            <iframe src="https://www.youtube.com/embed/T3C7t302i8M" allowfullscreen></iframe>
+            <div class="description"><strong>F = k * (q1*q2) / r²</strong><br>Η δύναμη μειώνεται όσο μεγαλώνει η απόσταση.</div>
+        </div>
+    </div>
+
+    <script>
+        var audio = document.getElementById("museumAudio");
+        function enterMuseum() {
+            document.getElementById('welcome-screen').style.display = 'none';
+            document.getElementById('museum-box').style.display = 'block';
+            audio.volume = 0.3; 
+            audio.play().catch(function(error) { console.log("Audio play blocked by browser"); });
+        }
+        function toggleAudio() {
+            if (audio.paused) { audio.play(); } else { audio.pause(); }
+        }
+        function openModal(id) {
+            document.getElementById('modal' + id).style.display = 'flex';
+        }
+        function closeModal(id) {
+            var modal = document.getElementById('modal' + id);
+            modal.style.display = 'none';
+            var iframe = modal.querySelector('iframe');
+            var tempSrc = iframe.src; iframe.src = ''; iframe.src = tempSrc;
+        }
+    </script>
+</div>
