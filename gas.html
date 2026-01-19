@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Συμπίεσης και Εκτόνωσης Αερίου</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            font-family: sans-serif;
+        }
+        #container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #e6ffe6; /* Απαλό πράσινο φόντο δοχείου */
+            border-top: none; /* Ανοιχτό πάνω μέρος για το έμβολο */
+        }
+        h2 { color: #333; }
+        #status { font-weight: bold; color: #555; margin-top: 10px;}
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <h2>Συμπίεση & Εκτόνωση Αερίου</h2>
+    <canvas id="gasCanvas" width="300" height="400"></canvas>
+    <div id="status">Κατάσταση: Εκκίνηση...</div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gasCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusText = document.getElementById('status');
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Ρυθμίσεις Εμβόλου
+    let pistonY = 50;
+    const pistonHeight = 20;
+    const minPistonY = 50;   // Ανώτατο σημείο (Μέγιστη Εκτόνωση)
+    const maxPistonY = 300;  // Κατώτατο σημείο (Μέγιστη Συμπίεση)
+    let pistonSpeed = 1.5;
+    let compressing = true;
+
+    // Ρυθμίσεις Αερίου (Σωματίδια)
+    const numParticles = 80;
+    const particles = [];
+    const particleRadius = 4;
+    let baseSpeed = 2; // Βασική ταχύτητα
+
+    // Αρχικοποίηση σωματιδίων
+    for (let i = 0; i < numParticles; i++) {
+        particles.push({
+            x: Math.random() * (width - 2 * particleRadius) + particleRadius,
+            y: Math.random() * (maxPistonY - minPistonY) + minPistonY + pistonHeight + particleRadius,
+            vx: (Math.random() - 0.5) * baseSpeed,
+            vy: (Math.random() - 0.5) * baseSpeed,
+            color: 'blue'
+        });
+    }
+
+    function drawPiston() {
+        ctx.fillStyle = '#555'; // Χρώμα εμβόλου
+        ctx.fillRect(0, pistonY, width, pistonHeight);
+        
+        // Στέλεχος εμβόλου (για οπτικό εφέ)
+        ctx.fillStyle = '#888';
+        ctx.fillRect(width / 2 - 10, 0, 20, pistonY);
+    }
+
+    function updatePhysics() {
+        // Κίνηση Εμβόλου
+        if (compressing) {
+            pistonY += pistonSpeed;
+            statusText.textContent = "Κατάσταση: Συμπίεση (Θέρμανση)";
+            statusText.style.color = "#d9534f"; // Κόκκινο
+            if (pistonY >= maxPistonY) {
+                pistonY = maxPistonY;
+                compressing = false;
+            }
+        } else {
+            pistonY -= pistonSpeed;
+            statusText.textContent = "Κατάσταση: Εκτόνωση (Ψύξη)";
+            statusText.style.color = "#5bc0de"; // Μπλε
+            if (pistonY <= minPistonY) {
+                pistonY = minPistonY;
+                compressing = true;
+            }
+        }
+
+        // Υπολογισμός "Θερμοκρασίας" (Ταχύτητα και Χρώμα)
+        // Όσο πιο χαμηλά το έμβολο (συμπίεση), τόσο μεγαλύτερη η ταχύτητα.
+        let compressionRatio = (pistonY - minPistonY) / (maxPistonY - minPistonY);
+        let currentSpeedMultiplier = 1 + (compressionRatio * 2.5); // Έως 3.5x πιο γρήγορα
+
+        // Κίνηση Σωματιδίων
+        particles.forEach(p => {
+            // Αλλαγή χρώματος βάσει συμπίεσης (Μπλε -> Κόκκινο)
+            const red = Math.floor(compressionRatio * 255);
+            const blue = Math.floor(255 - compressionRatio * 255);
+            p.color = `rgb(${red}, 50, ${blue})`;
+
+            // Εφαρμογή ταχύτητας
+            p.x += p.vx * currentSpeedMultiplier;
+            p.y += p.vy * currentSpeedMultiplier;
+
+            // Συγκρούσεις με τοίχους (Αριστερά/Δεξιά)
+            if (p.x - particleRadius < 0 || p.x + particleRadius > width) {
+                p.vx = -p.vx;
+            }
+
+            // Σύγκρουση με πάτο
+            if (p.y + particleRadius > height) {
+                p.vy = -p.vy;
+                p.y = height - particleRadius;
+            }
+
+            // Σύγκρουση με Έμβολο
+            const pistonBottomEdge = pistonY + pistonHeight;
+            if (p.y - particleRadius < pistonBottomEdge) {
+                p.vy = Math.abs(p.vy); // Αναπήδηση προς τα κάτω
+                p.y = pistonBottomEdge + particleRadius;
+                
+                // Προσθήκη λίγης ενέργειας αν το έμβολο κατεβαίνει (συμπίεση)
+                if(compressing) {
+                     p.vy += 0.5; 
+                     p.vx += (Math.random() - 0.5);
+                }
+            }
+        });
+    }
+
+    function drawParticles() {
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, particleRadius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            ctx.closePath();
+        });
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height); // Καθαρισμός οθόνης
+        
+        updatePhysics();
+        drawParticles();
+        drawPiston();
+
+        requestAnimationFrame(animate); // Επόμενο καρέ
+    }
+
+    // Έναρξη
+    animate();
+
+</script>
+
+</body>
+</html>
