@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Προσομοίωση Κυκλώματος με Αντίσταση</title>
+    <style>
+        body { background-color: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+        canvas { border: 2px solid #555; background: #000; margin-top: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .controls { margin: 20px; padding: 15px; background: #333; border-radius: 8px; text-align: center; }
+        input { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>Κύκλωμα με Αντίσταση & Ροή Ηλεκτρονίων</h2>
+    
+    <div class="controls">
+        <label>Τάση (Voltage): </label>
+        <input type="range" id="speedRange" min="0" max="10" value="2" step="0.5">
+        <p id="info">Τα ηλεκτρόνια συγκρούονται στην αντίσταση και παράγουν θερμότητα/φως.</p>
+    </div>
+
+    <canvas id="circuitCanvas" width="600" height="300"></canvas>
+
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        const speedInput = document.getElementById('speedRange');
+
+        let electrons = [];
+        const numElectrons = 50;
+
+        for (let i = 0; i < numElectrons; i++) {
+            electrons.push({
+                x: Math.random() * 500 + 50,
+                y: 140 + Math.random() * 20
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const speed = parseFloat(speedInput.value);
+
+            // 1. Σχεδίαση Αγωγού (Σύρμα)
+            ctx.strokeStyle = "#444";
+            ctx.lineWidth = 30;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(50, 150);
+            ctx.lineTo(550, 150);
+            ctx.stroke();
+
+            // 2. Σχεδίαση Αντίστασης / Λάμπας
+            // Όσο πιο γρήγορα τρέχουν, τόσο πιο πολύ "ανάβει"
+            let glow = speed * 15;
+            ctx.shadowBlur = glow;
+            ctx.shadowColor = `rgba(255, 255, 0, ${speed/10})`;
+            
+            ctx.fillStyle = `rgb(${100 + speed * 15}, ${100 + speed * 10}, 50)`;
+            ctx.beginPath();
+            ctx.rect(270, 125, 60, 50); // Το σώμα της αντίστασης
+            ctx.fill();
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(270, 125, 60, 50);
+
+            // 3. Σχεδίαση Πόλων
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#e74c3c"; // Αρνητικός πόλος (Πηγή)
+            ctx.fillRect(550, 120, 20, 60);
+            ctx.fillStyle = "#2ecc71"; // Θετικός πόλος
+            ctx.fillRect(30, 120, 20, 60);
+
+            // 4. Κίνηση Ηλεκτρονίων
+            ctx.fillStyle = "#00ffff";
+            electrons.forEach(e => {
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Κίνηση (από δεξιά προς τα αριστερά)
+                e.x -= speed;
+
+                // Όταν περνάνε από την αντίσταση (270 έως 330)
+                // Προσθέτουμε λίγο "τρέμουλο" για να δείξουμε τη σύγκρουση
+                if (e.x > 270 && e.x < 330) {
+                    e.y += (Math.random() - 0.5) * 4;
+                } else {
+                    // Επαναφορά στο κέντρο του αγωγού
+                    if (e.y > 160) e.y -= 0.5;
+                    if (e.y < 140) e.y += 0.5;
+                }
+
+                // Loop
+                if (e.x < 50) e.x = 550;
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>
